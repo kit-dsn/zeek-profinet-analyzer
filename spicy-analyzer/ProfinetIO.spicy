@@ -1,0 +1,51 @@
+module ProfinetIO;
+
+import spicy;
+
+type ServiceIDType = enum {
+	GET = 0x01,
+	SET = 0x02,
+	IDENTIFY = 0x05,
+	HELLO = 0x06
+};
+
+%byte-order = spicy::ByteOrder::Network;
+
+public type Packet = unit {
+	frame_id:  uint16;
+	rtc_frame: RTCFrame if ( 0x0100 <= self.frame_id && self.frame_id <= 0xfbff );
+	dcp_frame: DCPFrame if ( 0xfefc <= self.frame_id && self.frame_id <= 0xfeff );
+	data: bytes &eod;
+};
+
+public type DCPFrame = unit {
+	service_id:     uint8; # &convert=ServiceIDType($$);
+	service_type:    bitfield(8) {
+		stype:   0..1;
+		success: 2;
+		};
+	xid:            uint32;
+	response_delay: uint16;
+	len:            uint16 { self.rest = $$; }
+	blocks:         DCPBlock(self)[] &until-including=(self.rest == 0);
+
+	var rest: uint16 = 0;
+};
+
+public type DCPBlock = unit(inout frame: DCPFrame) {
+	option:    uint8;
+	suboption: uint8;
+	len:       uint16 { frame.rest -= ($$ + 4); }
+	data:      bytes  &size=self.len;
+	padding:   int8   if ( self.len % 2 == 1 );
+
+	on padding { frame.rest -= 1; }
+};
+
+public type RTCFrame = unit() {
+	#TODO: Make size flexible
+	data:            bytes &size=131;
+	cycle_counter:   uint16;
+	data_status:     uint8;
+	transfer_status: uint8;
+};

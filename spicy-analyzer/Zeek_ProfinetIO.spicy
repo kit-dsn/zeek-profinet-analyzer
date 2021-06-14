@@ -1,0 +1,54 @@
+module Zeek_ProfinetIO;
+
+import ProfinetIO from protocols;
+import spicy;
+import zeek;
+
+# Converts a ProfinetIO::DCPFrame into a Zeek type.
+public function create_dcp_msg(dcp: ProfinetIO::DCPFrame):
+    tuple<
+        uint8,
+        bool,
+        bool,
+        bool,
+        uint32,
+        uint16> {
+    return (
+        dcp.service_id,
+        dcp.service_type.stype == 0,
+        dcp.service_type.stype == 1,
+        dcp.service_type.success == 0,
+        dcp.xid,
+        dcp.response_delay
+    );
+}
+
+# Converts a ProfinetIO::DCPBlock into a Zeek type.
+public function create_dcp_block(block: ProfinetIO::DCPBlock):
+    tuple<
+        uint8,
+        uint8,
+        uint16,
+        bytes> {
+    return (
+        block.option,
+        block.suboption,
+        block.len,
+        block.data
+    );
+}
+
+# Converts a ProfinetIO::RTCFrame into a Zeek type.
+public function create_rtc_msg(rtc: ProfinetIO::RTCFrame):
+    tuple<
+        bytes,
+        uint16,
+        uint8,
+        uint8> {
+    return (
+        rtc.data,
+        rtc.cycle_counter,
+        rtc.data_status,
+        rtc.transfer_status
+    );
+}

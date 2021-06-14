@@ -1,0 +1,14 @@
+packet analyzer spicy::ProfinetIO:
+	parse with ProfinetIO::Packet;
+
+import Zeek_ProfinetIO;
+
+on ProfinetIO::Packet::dcp_frame if ( self.dcp_frame.service_type.stype == 0 )
+	-> event ProfinetIO::dcp_request(Zeek_ProfinetIO::create_dcp_msg(self.dcp_frame), [Zeek_ProfinetIO::create_dcp_block(block) for block in self.dcp_frame.blocks]);
+
+on ProfinetIO::Packet::dcp_frame if ( self.dcp_frame.service_type.stype == 1 )
+	-> event ProfinetIO::dcp_response(Zeek_ProfinetIO::create_dcp_msg(self.dcp_frame), [Zeek_ProfinetIO::create_dcp_block(block) for block in self.dcp_frame.blocks]);
+
+on ProfinetIO::Packet::dcp_frame -> event ProfinetIO::dcp_message(self.frame_id, Zeek_ProfinetIO::create_dcp_msg(self.dcp_frame), [Zeek_ProfinetIO::create_dcp_block(block) for block in self.dcp_frame.blocks]);
+
+on ProfinetIO::Packet::rtc_frame -> event ProfinetIO::rtc_message(self.frame_id, Zeek_ProfinetIO::create_rtc_msg(self.rtc_frame));
